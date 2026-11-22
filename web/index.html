@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Burn Glucose to Lactate? (network)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Same lab-bench look as the tme-glucose-competition pages.
+   Glucose carbon = amber, mitochondria/respiration = blue, glutamine = green, lipid = purple,
+   serine/one-carbon = pink, drugs = teal. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#120c16);--ink:light-dark(#1d1422,#f2eaf4);--muted:light-dark(#66586d,#b6a8bd);
+--panel:light-dark(#f8f3f9,#1b131f);--line:light-dark(#e6d9e9,#38293e);
+--cyto:light-dark(#fbe4eb,#2a1724);--mem:light-dark(#d9a6bd,#6d3a57);--mito:light-dark(#dcebf7,#152a40);
+--glc:light-dark(#c98500,#ffc23d);--ox:light-dark(#0b63a8,#6fc0ff);--gln:light-dark(#00795f,#4fd1a5);
+--fa:light-dark(#6a2c91,#c99be8);--ser:light-dark(#b8557f,#f08cbc);--drug:light-dark(#0e9a87,#33d6ba);
+--off:light-dark(#b9aec0,#5b5063);--accent:light-dark(#6a2c91,#c99be8)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{font-family:Lexend,Inter,sans-serif;letter-spacing:-.02em;line-height:1.08;margin:0}
+h1{font-size:clamp(32px,4.4vw,48px);text-wrap:balance}
+h2{font-size:24px;margin-bottom:10px}
+.top{padding-bottom:12px}
+.top .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px 32px}
+.top p{margin:8px 0 0;max-width:64ch;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;white-space:nowrap}
+.lab{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding-top:8px}
+.scene{border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.scene svg{display:block;width:100%;height:auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9em,1fr));gap:10px;margin-top:12px}
+.stat{background:var(--panel);border-radius:12px;padding:10px 14px}
+.stat b{display:block;font:600 clamp(22px,2.4vw,28px) Lexend,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat span{font-size:13px;color:var(--muted)}
+.stat small{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.status{margin:12px 0 0;font-weight:600;min-height:3.2em}
+.ctrl{background:var(--panel);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;align-self:start}
+button{font:600 15px Inter,sans-serif;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ox);outline-offset:2px}
+button[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 16%,var(--bg));border-color:var(--accent)}
+.presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.presets button{font-size:14px;font-weight:500;text-align:left;padding:6px 10px;line-height:1.25}
+.group{font:600 13px Inter,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px;border-top:1px solid var(--line);padding-top:10px}
+.sl label{display:flex;justify-content:space-between;gap:8px;font-size:15px;font-weight:500}
+.sl output{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+input[type=range]{width:100%;height:36px;margin:0;accent-color:var(--accent);cursor:pointer}
+.sl.drug input{accent-color:var(--drug)}
+.toggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.toggles button{font-size:14px;font-weight:500;text-align:left;line-height:1.25;padding:6px 10px}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:16px}
+.chart header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px;font-weight:600}
+.chart header span{font-size:13px;color:var(--muted);font-weight:500}
+.fig{position:relative;height:300px;margin-top:4px}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%}
+.key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);margin-top:4px}
+.key i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
+.about{background:var(--panel);margin-top:12px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.about p,.about li{max-width:68ch;margin:0 0 10px}
+.about ol{padding-left:20px;margin:0}
+.eq{font:14px/1.7 ui-monospace,Menlo,monospace;background:var(--bg);border-radius:10px;padding:10px 12px;overflow-x:auto;white-space:pre;margin:0 0 10px}
+.foot{font-size:13px;color:var(--muted)}
+.pal{display:none}
+svg text{font-family:Inter,system-ui,sans-serif}
+@media(max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}.cols{grid-template-columns:minmax(0,1fr)}
+.lab>div:first-child{display:contents}.scene{order:1}.stats{order:2}.status{order:3}.ctrl{order:4}.charts{order:5}}
+@media(max-width:700px){.scene{overflow-x:auto}.scene svg{min-width:680px}}
+@media(max-width:700px){.charts{grid-template-columns:minmax(0,1fr)}.fig{height:220px}}
+</style>
+</head>
+<body>
+<header class="band top"><div class="wrap">
+  <div>
+    <h1>Why Burn Glucose to Lactate?</h1>
+    <div style="font:600 20px Lexend,sans-serif;color:var(--muted);margin-top:6px">Version 2: the network model</div>
+    <p>A cancer cell builds protein, nucleotides and membrane lipid from glucose, glutamine, serine and fatty acids. Block an enzyme with a drug and watch the network reroute through another pathway, or fail to.</p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="note">Simplified illustrative model, not experimental data</div><a href="simple.html" style="color:var(--accent);font-weight:600">Open the simple model (version 1)</a></div>
+</div></header>
+
+<main class="band" style="padding-top:8px"><div class="wrap lab">
+  <div>
+    <div class="scene"><svg id="map" viewBox="0 0 800 470" role="img" aria-label="Metabolic map of a cancer cell. Arrow widths show reaction rates; grey dashed arrows are routes not used; teal bars mark drug-inhibited enzymes."></svg></div>
+    <div class="stats">
+      <div class="stat"><span>Growth rate</span><b id="vG">0</b><small id="vGp"></small></div>
+      <div class="stat"><span>Glucose to lactate</span><b id="vL">0%</b></div>
+      <div class="stat"><span>Respiration</span><b id="vR">0</b><small>NADH oxidised</small></div>
+      <div class="stat"><span>Space budget used</span><b id="vS">0%</b></div>
+    </div>
+    <p class="status" id="status" aria-live="polite"></p>
+    <div class="charts" aria-label="Graphs">
+  <div class="chart"><header>Growth vs drug dose <span>current nutrients; dot: current dose</span></header><div class="fig"><canvas id="cDose"></canvas></div>
+    <div class="key" id="doseKey"></div></div>
+  <div class="chart"><header>Key reaction rates <span>bar: now · outline: same cell without drugs</span></header><div class="fig"><canvas id="cBar"></canvas></div></div>
+</div>
+  </div>
+  <aside class="ctrl" aria-label="Controls">
+    <div class="group" style="border:0;margin:0;padding:0">Scenarios</div>
+    <div class="presets" id="presets"></div>
+    <div class="group">Nutrients and oxygen</div>
+    <div class="sl"><label for="glc_max">Glucose <output id="o_glc_max"></output></label><input type="range" id="glc_max" min="1" max="40" step="1"></div>
+    <div class="sl"><label for="gln_max">Glutamine <output id="o_gln_max"></output></label><input type="range" id="gln_max" min="0" max="15" step="0.5"></div>
+    <div class="sl"><label for="ser_max">Serine from outside <output id="o_ser_max"></output></label><input type="range" id="ser_max" min="0" max="8" step="0.1"></div>
+    <div class="sl"><label for="fa_max">Fatty acids from outside <output id="o_fa_max"></output></label><input type="range" id="fa_max" min="0" max="1" step="0.05"></div>
+    <div class="sl"><label for="o2_max">Oxygen <output id="o_o2_max"></output></label><input type="range" id="o2_max" min="1" max="40" step="1"></div>
+    <div class="group">Drugs (% inhibition)</div>
+    <div class="sl drug"><label for="inh_GLS">GLS inhibitor <output id="o_inh_GLS"></output></label><input type="range" id="inh_GLS" min="0" max="1" step="0.05"></div>
+    <div class="sl drug"><label for="inh_FASN">FASN inhibitor <output id="o_inh_FASN"></output></label><input type="range" id="inh_FASN" min="0" max="1" step="0.05"></div>
+    <div class="sl drug"><label for="inh_PHGDH">PHGDH inhibitor <output id="o_inh_PHGDH"></output></label><input type="range" id="inh_PHGDH" min="0" max="1" step="0.05"></div>
+    <div class="sl drug"><label for="inh_LDH">LDHA inhibitor <output id="o_inh_LDH"></output></label><input type="range" id="inh_LDH" min="0" max="1" step="0.05"></div>
+    <div class="group">Backup routes</div>
+    <div class="toggles">
+      <button id="route_PC" aria-pressed="true">Pyruvate carboxylase</button>
+      <button id="route_IDHrev" aria-pressed="true">Reductive carboxylation</button>
+    </div>
+  </aside>
+</div></main>
+
+
+
+<section class="band about"><div class="wrap cols">
+  <div>
+    <h2>Try these experiments</h2>
+    <ol>
+      <li><b>Compensation.</b> Load "GLS drug 50%". Growth falls only a little, because pyruvate carboxylase refills the TCA cycle from glucose. Now switch pyruvate carboxylase off.</li>
+      <li><b>Context decides.</b> Load "FASN drug, lipid-poor", then raise fatty acids from outside. The drug stops working once the cell can import enough lipid. Do the same with the PHGDH drug and serine.</li>
+      <li><b>Oxygen matters.</b> Raise the LDHA drug in normoxia: almost nothing happens. Load "Hypoxia" and try again.</li>
+      <li><b>Two drugs.</b> Combine a GLS and a PHGDH drug. Is the effect bigger than the stronger drug alone?</li>
+    </ol>
+  </div>
+  <div>
+    <h2>How the model works</h2>
+    <p><b>Flux balance analysis.</b> 40 lumped reactions link nutrients to building blocks. Linear programming finds the reaction rates <i>v</i> that maximise growth, given:</p>
+<pre class="eq">S · v = 0             (steady state)
+lb ≤ v ≤ ub           (supply, drugs)
+Σ cost_i · v_i ≤ 1    (space budget)</pre>
+    <p>A drug at <i>x</i>% caps its enzyme at (1 − <i>x</i>) times the rate it had without the drug. Among equally good solutions, the one with the smallest total flux is shown. The solver in this page gives the same answers as the Python script.</p>
+  </div>
+  <div>
+    <h2>Where this comes from</h2>
+    <p>Based on my published review <b>"Metabolic Reprogramming in Cancer Cells"</b> (#94): aerobic glycolysis, de novo lipogenesis (FASN), glutaminolysis and serine/one-carbon metabolism are linked, and single-pathway drugs are limited by metabolic compensation (Sections 5.4, 5.5 and 8).</p>
+    <p>The reactions, costs, nutrient levels and drug rule are my own modelling choices, not results from the paper. The model has no gene regulation, no enzyme kinetics and no thermodynamics; it shows which routes the network <i>allows</i>, not what a real cell does.</p>
+    <p class="foot">Alper Öztürk · Python version: cancer_network.py in the project repository</p>
+  </div>
+</div></section>
+
+<div class="pal" id="pal"><i data-c="ink" style="color:var(--ink)"></i><i data-c="muted" style="color:var(--muted)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="bg" style="color:var(--bg)"></i><i data-c="glc" style="color:var(--glc)"></i><i data-c="ox" style="color:var(--ox)"></i><i data-c="gln" style="color:var(--gln)"></i><i data-c="fa" style="color:var(--fa)"></i><i data-c="ser" style="color:var(--ser)"></i><i data-c="drug" style="color:var(--drug)"></i><i data-c="off" style="color:var(--off)"></i></div>
+
+<script>
+// Small linear-programming solver (two-phase simplex, Bland's rule) and the
+// version-2 network model. Same reactions, bounds and steps as cancer_network.py.
+const LP = (() => {
+  const EPS = 1e-9;
+  // minimize c.x  s.t. Aeq x = beq, Aub x <= bub, lb <= x <= ub
+  function solve(c, Aeq, beq, Aub, bub, lb, ub) {
+    const n = c.length;
+    const rows = [], rhs = [];
+    // y = x - lb >= 0
+    const shift = (A, b) => A.map((r, i) => b[i] - r.reduce((s, a, j) => s + a * lb[j], 0));
+    const beq2 = shift(Aeq, beq), bub2 = shift(Aub, bub);
+    const nUb = Aub.length;
+    const finiteUb = [];
+    for (let j = 0; j < n; j++) if (isFinite(ub[j])) finiteUb.push(j);
+    const nSlack = nUb + finiteUb.length;
+    const nCols = n + nSlack;
+    Aeq.forEach((r, i) => { const row = new Float64Array(nCols); r.forEach((a, j) => row[j] = a); rows.push(row); rhs.push(beq2[i]); });
+    Aub.forEach((r, i) => { const row = new Float64Array(nCols); r.forEach((a, j) => row[j] = a); row[n + i] = 1; rows.push(row); rhs.push(bub2[i]); });
+    finiteUb.forEach((j, k) => { const row = new Float64Array(nCols); row[j] = 1; row[n + nUb + k] = 1; rows.push(row); rhs.push(ub[j] - lb[j]); });
+    const m = rows.length;
+    for (let i = 0; i < m; i++) if (rhs[i] < 0) { for (let j = 0; j < nCols; j++) rows[i][j] = -rows[i][j]; rhs[i] = -rhs[i]; }
+    // tableau with artificials
+    const W = nCols + m;
+    const T = rows.map((r, i) => { const t = new Float64Array(W + 1); t.set(r); t[nCols + i] = 1; t[W] = rhs[i]; return t; });
+    const basis = Array.from({ length: m }, (_, i) => nCols + i);
+    const allowed = new Uint8Array(W).fill(1);
+
+    function run(cost) {
+      // reduced costs row
+      const z = new Float64Array(W + 1);
+      for (let j = 0; j <= W; j++) {
+        let s = j < W ? cost[j] : 0;
+        for (let i = 0; i < m; i++) s -= cost[basis[i]] * T[i][j];
+        z[j] = s;
+      }
+      for (let it = 0; it < 20000; it++) {
+        let e = -1;
+        for (let j = 0; j < W; j++) if (allowed[j] && z[j] < -EPS) { e = j; break; } // Bland
+        if (e < 0) return true;
+        let r = -1, best = Infinity;
+        for (let i = 0; i < m; i++) {
+          const a = T[i][e];
+          if (a > EPS) {
+            const ratio = T[i][W] / a;
+            if (ratio < best - 1e-12 || (Math.abs(ratio - best) <= 1e-12 && basis[i] < basis[r])) { best = ratio; r = i; }
+          }
+        }
+        if (r < 0) return false; // unbounded
+        pivot(r, e, z);
+      }
+      return false;
+    }
+    function pivot(r, e, z) {
+      const pr = T[r], pv = pr[e];
+      for (let j = 0; j <= W; j++) pr[j] /= pv;
+      for (let i = 0; i < m; i++) if (i !== r) {
+        const f = T[i][e];
+        if (f !== 0) { const ti = T[i]; for (let j = 0; j <= W; j++) ti[j] -= f * pr[j]; }
+      }
+      if (z) { const f = z[e]; if (f !== 0) for (let j = 0; j <= W; j++) z[j] -= f * pr[j]; }
+      basis[r] = e;
+    }
+    // phase 1
+    const c1 = new Float64Array(W); for (let j = nCols; j < W; j++) c1[j] = 1;
+    run(c1);
+    let infeas = 0; for (let i = 0; i < m; i++) if (basis[i] >= nCols) infeas += T[i][W];
+    if (infeas > 1e-7) return null;
+    // drive remaining artificials out of the basis
+    for (let i = 0; i < m; i++) if (basis[i] >= nCols) {
+      for (let j = 0; j < nCols; j++) if (Math.abs(T[i][j]) > 1e-9) { pivot(i, j, null); break; }
+    }
+    for (let j = nCols; j < W; j++) allowed[j] = 0;
+    // phase 2
+    const c2 = new Float64Array(W); for (let j = 0; j < n; j++) c2[j] = c[j];
+    if (!run(c2)) return null;
+    const x = new Float64Array(n);
+    for (let i = 0; i < m; i++) if (basis[i] < n) x[basis[i]] = T[i][W];
+    for (let j = 0; j < n; j++) x[j] += lb[j];
+    return x;
+  }
+  return { solve };
+})();
+
+function makeModel(NET) {
+  const RXN = NET.R.map(r => r[0]);
+  const METS = [...new Set(NET.R.flatMap(r => Object.keys(r[1])))].sort();
+  const S = METS.map(mt => NET.R.map(r => r[1][mt] || 0));
+  const COST = NET.R.map(r => r[2]);
+  const BIG = 1000;
+  const DRUGS = ["GLS", "FASN", "PHGDH", "LDH"];
+  const idx = Object.fromEntries(RXN.map((r, i) => [r, i]));
+  const cache = new Map();
+
+  function bounds(p, ref) {
+    const lb = RXN.map(() => 0), ub = RXN.map(() => BIG);
+    ub[idx.EX_glc] = p.glc_max; ub[idx.EX_gln] = p.gln_max; ub[idx.EX_ser] = p.ser_max;
+    ub[idx.EX_bcaa] = p.bcaa_max; ub[idx.EX_fa] = p.fa_max; ub[idx.EX_o2] = p.o2_max;
+    lb[idx.ATPM] = p.atp_maint; ub[idx.MAS] = p.shuttle_max;
+    if (!p.route_PC) ub[idx.PC] = 0;
+    if (!p.route_IDHrev) ub[idx.IDHrev] = 0;
+    DRUGS.forEach(d => { const x = p["inh_" + d]; if (x > 0) ub[idx[d]] = (1 - x) * ref[d]; });
+    return [lb, ub];
+  }
+  function lp([lb, ub]) {
+    const c = RXN.map(() => 0); c[idx.BIOMASS] = -1;
+    const zeros = METS.map(() => 0);
+    const x = LP.solve(c, S, zeros, [COST], [1], lb, ub);
+    if (!x) return null;
+    const mu = x[idx.BIOMASS];
+    const lb2 = lb.slice(), ub2 = ub.slice();
+    lb2[idx.BIOMASS] = mu * (1 - 1e-7); ub2[idx.BIOMASS] = mu;
+    const x2 = LP.solve(RXN.map(() => 1), S, zeros, [COST], [1], lb2, ub2);
+    return Array.from(x2 || x, v => Math.max(0, v));
+  }
+  function solve(params) {
+    const p = Object.assign({}, NET.P, params || {});
+    let ref = null;
+    if (DRUGS.some(d => p["inh_" + d] > 0)) {
+      const q = Object.assign({}, p); DRUGS.forEach(d => q["inh_" + d] = 0);
+      const key = JSON.stringify(q);
+      if (!cache.has(key)) { if (cache.size > 200) cache.clear(); cache.set(key, solve(q)); }
+      ref = cache.get(key);
+    }
+    const x = lp(bounds(p, ref));
+    const out = {};
+    if (!x) { RXN.forEach(r => out[r] = 0); out.growth = 0; return out; }
+    RXN.forEach((r, i) => out[r] = x[i]);
+    out.growth = out.BIOMASS;
+    out.space_used = COST.reduce((s, c, i) => s + c * x[i], 0);
+    out.lactate_fraction = out.EX_glc > 0 ? out.EX_lac / (2 * out.EX_glc) : 0;
+    return out;
+  }
+  return { solve, RXN, METS, DRUGS };
+}
+
+
+</script>
+<script>
+{
+const NET = {"R":[["EX_glc",{"GLC":1},0,"glucose uptake (GLUT1)"],["EX_gln",{"GLN":1},0,"glutamine uptake (SLC1A5)"],["EX_ser",{"SER":1},0,"serine uptake"],["EX_fa",{"FA":1},0,"fatty-acid (lipid) uptake"],["EX_bcaa",{"BCAA":1},0,"branched-chain amino acid uptake (other nitrogen donors, lumped)"],["EX_nh4",{"NH4":-1},0,"ammonia secretion"],["EX_o2",{"O2":1},0,"oxygen supply"],["EX_lac",{"LAC":-1},0,"lactate secretion"],["EX_ala",{"ALA":-1},0,"alanine secretion"],["EX_glu",{"GLU":-1},0,"glutamate secretion"],["HK",{"GLC":-1,"ATP":-1,"G6P":1},0.003,"hexokinase (HK2)"],["GLYC",{"G6P":-1,"PYR":2,"ATP":3,"NADHc":2},0.009,"glycolysis, G6P -> 2 pyruvate"],["PPP",{"G6P":-1,"R5P":1,"NADPH":2},0.006,"oxidative pentose phosphate pathway"],["PPPrec",{"R5P":-1,"G6P":0.8333333333333334},0.006,"non-oxidative PPP: ribose carbon returned to glycolysis"],["LDH",{"PYR":-1,"NADHc":-1,"LAC":1},0.0015,"lactate dehydrogenase (LDHA)"],["PHGDH",{"G6P":-1,"GLU":-1,"SER":1,"PYR":1,"AKG":1,"NADHc":3,"ATP":2},0.012,"serine synthesis branch of glycolysis (PHGDH, PSAT1, PSPH)"],["SHMT",{"SER":-1,"GLY":1,"C1":1},0.006,"serine -> glycine + one-carbon unit (SHMT2)"],["GCS",{"GLY":-1,"C1":1,"NADH":1,"NH4":1},0.006,"glycine cleavage system"],["C1OX",{"C1":-1,"NADPH":1},0.006,"one-carbon unit oxidised for NADPH (MTHFD)"],["PDH",{"PYR":-1,"ACOA":1,"NADH":1},0.006,"pyruvate dehydrogenase"],["CS",{"ACOA":-1,"OAA":-1,"CIT":1},0.006,"citrate synthase"],["IDH",{"CIT":-1,"AKG":1,"NADH":1},0.006,"aconitase + isocitrate dehydrogenase"],["TCA2",{"AKG":-1,"OAA":1,"NADH":3,"ATP":1},0.012,"alpha-KG -> oxaloacetate (lumped)"],["OXPHOS",{"NADH":-1,"O2":-0.5,"ATP":2.5},0.021,"electron transport chain + ATP synthase"],["MAS",{"NADHc":-1,"NADH":1},0.006,"malate-aspartate shuttle: cytosolic NADH into mitochondria"],["PC",{"PYR":-1,"ATP":-1,"OAA":1},0.006,"pyruvate carboxylase (anaplerosis)"],["ME",{"OAA":-1,"NADHc":-1,"PYR":1,"NADPH":1},0.006,"malate dehydrogenase + malic enzyme"],["IDHrev",{"AKG":-1,"NADPH":-1,"CIT":1},0.006,"reductive carboxylation (IDH1/2 in reverse)"],["GLS",{"GLN":-1,"GLU":1,"NH4":1},0.006,"glutaminase (GLS)"],["GDH",{"GLU":-1,"AKG":1,"NADH":1,"NH4":1},0.006,"glutamate dehydrogenase (GLUD1)"],["GDHrev",{"AKG":-1,"NADPH":-1,"NH4":-1,"GLU":1},0.006,"reductive amination of alpha-KG"],["GOT",{"OAA":-1,"GLU":-1,"ASP":1,"AKG":1},0.006,"aspartate transaminase"],["BCAT",{"BCAA":-1,"AKG":-1,"GLU":1},0.006,"BCAA transaminase (nitrogen from other amino acids)"],["ALT",{"PYR":-1,"GLU":-1,"ALA":1,"AKG":1},0.006,"alanine transaminase"],["ACLY",{"CIT":-1,"ATP":-1,"ACC":1,"OAA":1},0.006,"ATP-citrate lyase"],["FASN",{"ACC":-8,"ATP":-7,"NADPH":-14,"FA":1},0.03,"ACC + fatty acid synthase -> palmitate"],["PROT",{"GLU":-1,"ASP":-1,"SER":-0.5,"GLY":-0.5,"ATP":-4,"PRO":1},0,"protein (lumped; essential amino acids assumed available)"],["NUC",{"R5P":-1,"ASP":-1,"GLY":-1,"C1":-2,"GLN":-2,"ATP":-7,"NUC":1,"GLU":2},0,"nucleotides (lumped purine + pyrimidine)"],["ATPM",{"ATP":-1},0,"ATP for cell maintenance"],["BIOMASS",{"PRO":-1,"NUC":-0.3,"FA":-0.15,"NADPH":-1,"ATP":-5},0,"new cell material (growth rate)"]],"P":{"glc_max":20.0,"gln_max":10.0,"bcaa_max":5.0,"ser_max":0.3,"fa_max":0.15,"o2_max":40.0,"shuttle_max":5.0,"atp_maint":5.0,"inh_GLS":0.0,"inh_FASN":0.0,"inh_PHGDH":0.0,"inh_LDH":0.0,"route_PC":true,"route_IDHrev":true}};
+const M = makeModel(NET);
+const $ = id => document.getElementById(id);
+const DRUG_IDS = ["inh_GLS", "inh_FASN", "inh_PHGDH", "inh_LDH"];
+const DRUG_NAMES = {GLS: "GLS", FASN: "FASN", PHGDH: "PHGDH", LDH: "LDHA"};
+const SL = ["glc_max", "gln_max", "ser_max", "fa_max", "o2_max", ...DRUG_IDS];
+const TG = ["route_PC", "route_IDHrev"];
+const BASE = {glc_max: 20, gln_max: 10, ser_max: 0.3, fa_max: 0.15, o2_max: 40, inh_GLS: 0, inh_FASN: 0, inh_PHGDH: 0, inh_LDH: 0, route_PC: true, route_IDHrev: true};
+const PRESETS = [
+  ["Normoxia", {}],
+  ["Hypoxia", {o2_max: 4}],
+  ["GLS drug 50%", {inh_GLS: .5}],
+  ["GLS drug, no PC", {inh_GLS: .5, route_PC: false}],
+  ["FASN drug, lipid-poor", {inh_FASN: .5}],
+  ["FASN drug, lipid-rich", {inh_FASN: .5, fa_max: 1}],
+  ["PHGDH drug 50%", {inh_PHGDH: .5}],
+  ["LDHA drug, hypoxia", {inh_LDH: .5, o2_max: 4}],
+];
+const fmt = k => v => k.startsWith('inh_') ? Math.round(100 * v) + '%' : (+v).toFixed(k === 'ser_max' ? 1 : k === 'fa_max' ? 2 : k === 'gln_max' ? 1 : 0);
+
+// ---- metabolic map -------------------------------------------------------
+const NODES = {
+  glcO: [40, 62, "Glucose", "out"], serO: [40, 250, "Serine", "out"], glnO: [40, 432, "Glutamine", "out"],
+  lacO: [758, 62, "Lactate", "out"], faO: [758, 150, "Fatty acids", "out"], o2O: [758, 432, "O₂", "out"],
+  G6P: [175, 62, "G6P"], PYR: [395, 62, "Pyruvate"], R5P: [140, 160, "Ribose-5-P"], SER: [250, 250, "Serine"],
+  GLY: [250, 340, "Gly + 1C"], NUC: [135, 340, "Nucleotides", "bb"], FA: [640, 150, "Fatty acids", "bb"],
+  GLU: [250, 432, "Glutamate"], ACOA: [400, 205, "Acetyl-CoA"], CIT: [560, 205, "Citrate"],
+  AKG: [585, 330, "α-KG"], OAA: [425, 330, "Oxaloacetate"], ETC: [560, 432, "Respiration"],
+};
+// [reaction or flux function, from, to, colour, bend, label]
+const EDGES = [
+  ["EX_glc", "glcO", "G6P", "glc", 0], ["GLYC", "G6P", "PYR", "glc", 0, "glycolysis"], ["LDH", "PYR", "lacO", "glc", 0, "LDHA"],
+  ["PPP", "G6P", "R5P", "glc", 0, "PPP"], ["PHGDH", "G6P", "SER", "ser", 10, "PHGDH"], ["EX_ser", "serO", "SER", "ser", 0],
+  ["SHMT", "SER", "GLY", "ser", 0], ["NUC", "R5P", "NUC", "glc", -10], [r => 2 * r.NUC, "GLY", "NUC", "ser", 0],
+  ["PDH", "PYR", "ACOA", "glc", 0, "PDH"], ["PC", "PYR", "OAA", "glc", 120, "PC", -1], ["CS", "ACOA", "CIT", "glc", 0],
+  ["IDH", "CIT", "AKG", "ox", -18], ["IDHrev", "AKG", "CIT", "gln", -18, "reductive"], ["TCA2", "AKG", "OAA", "ox", 0, "TCA"],
+  ["ACLY", "CIT", "FA", "fa", 0, "ACLY/FASN"], ["EX_fa", "faO", "FA", "fa", 0],
+  ["GLS", "glnO", "GLU", "gln", 0, "GLS"],
+  [r => Math.max(0, r.GDH + r.GOT + r.ALT + r.PHGDH - r.GDHrev - r.BCAT), "GLU", "AKG", "gln", 30],
+  ["OXPHOS", "o2O", "ETC", "ox", 0]
+];
+const DRUG_ON = {GLS: "GLS", FASN: "ACLY", PHGDH: "PHGDH", LDH: "LDH"};
+let C = {};
+function readColours(){ document.querySelectorAll('#pal i').forEach(i => C[i.dataset.c] = getComputedStyle(i).color); }
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+let edgeEls = [];
+function buildMap(){
+  const svg = $('map');
+  const defs = el('defs', {}, svg);
+  for (const c of ["glc", "ox", "gln", "fa", "ser", "off"]){
+    const m = el('marker', {id: 'ar-' + c, viewBox: '0 0 10 10', refX: 6, refY: 5, markerWidth: 3.2, markerHeight: 3.2, orient: 'auto-start-reverse', markerUnits: 'strokeWidth'}, defs);
+    el('path', {d: 'M0 0 L10 5 L0 10 z', fill: `var(--${c})`}, m);
+  }
+  el('rect', {x: 88, y: 16, width: 616, height: 446, rx: 46, fill: 'var(--cyto)', stroke: 'var(--mem)', 'stroke-width': 5}, svg);
+  el('rect', {x: 340, y: 178, width: 330, height: 278, rx: 60, fill: 'var(--mito)', stroke: 'var(--ox)', 'stroke-width': 2.5}, svg);
+  const t = el('text', {x: 356, y: 444, 'font-size': 12, fill: 'var(--ox)', 'font-weight': 600}, svg); t.textContent = 'mitochondrion';
+  const t2 = el('text', {x: 104, y: 40, 'font-size': 12, fill: 'var(--muted)'}, svg); t2.textContent = 'cancer cell';
+  const gE = el('g', {}, svg), gN = el('g', {}, svg), gL = el('g', {}, svg);
+  edgeEls = EDGES.map(([rx, a, b, col, bend, label, flip]) => {
+    const [x1, y1] = NODES[a], [x2, y2] = NODES[b];
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    const cx = mx - dy / L * bend, cy = my + dx / L * bend;
+    // shorten so arrows stop at node boxes
+    const s = 34 / L, e = 1 - 36 / L;
+    const P = f => [(1-f)*(1-f)*x1 + 2*(1-f)*f*cx + f*f*x2, (1-f)*(1-f)*y1 + 2*(1-f)*f*cy + f*f*y2];
+    const [sx, sy] = P(s), [ex, ey] = P(e);
+    const d = `M${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
+    const path = el('path', {d, fill: 'none', 'stroke-linecap': 'round'}, gE);
+    let lab = null, drug = null;
+    const [lx, ly] = P(.5), [ax, ay] = P(.45), [bx, by] = P(.55);
+    let nx = -(by - ay), ny = bx - ax; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    if (ny > 0 || (Math.abs(ny) < .2 && nx < 0)){ nx = -nx; ny = -ny; }   // put labels above / right of the arrow
+    if (flip){ nx = -nx; ny = -ny; }
+    if (label){ lab = el('text', {'font-size': 12, 'font-weight': 600, stroke: 'var(--cyto)', 'stroke-width': 4, 'paint-order': 'stroke', 'stroke-linejoin': 'round',
+      'text-anchor': nx > .35 ? 'start' : nx < -.35 ? 'end' : 'middle', 'dominant-baseline': 'middle'}, gL); lab.textContent = label; }
+    const dk = Object.keys(DRUG_ON).find(k => DRUG_ON[k] === rx);
+    if (dk){ const [qx, qy] = P(.42); const ang = Math.atan2(ey - sy, ex - sx) * 180 / Math.PI + 90;
+      drug = el('g', {transform: `translate(${qx} ${qy}) rotate(${ang})`, visibility: 'hidden'}, gE);
+      el('rect', {x: -14, y: -3.5, width: 28, height: 7, rx: 2, fill: 'var(--drug)'}, drug); }
+    return {rx, col, path, lab, drug, dk, lx, ly, nx, ny};
+  });
+  for (const [id, [x, y, name, kind]] of Object.entries(NODES)){
+    const g = el('g', {}, gN);
+    const w = Math.max(44, name.length * 7.2 + 14);
+    el('rect', {x: x - w/2, y: y - 13, width: w, height: 26, rx: kind === 'bb' ? 13 : 7,
+      fill: kind === 'out' ? 'var(--bg)' : kind === 'bb' ? 'color-mix(in srgb, var(--fa) 14%, var(--bg))' : 'var(--bg)',
+      stroke: kind === 'out' ? 'var(--muted)' : 'var(--line)', 'stroke-dasharray': kind === 'out' ? '3 3' : ''}, g);
+    const tx = el('text', {x, y: y + 4.5, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': kind === 'out' || kind === 'bb' ? 600 : 500, fill: 'var(--ink)'}, g);
+    tx.textContent = name;
+  }
+}
+function drawMap(r, p){
+  for (const e of edgeEls){
+    const f = typeof e.rx === 'function' ? e.rx(r) : r[e.rx];
+    const on = f > 1e-4;
+    e.path.setAttribute('stroke', on ? `var(--${e.col})` : 'var(--off)');
+    e.path.setAttribute('stroke-width', on ? 1.6 + 2.6 * Math.sqrt(f) : 1.4);
+    e.path.setAttribute('stroke-dasharray', on ? '' : '4 4');
+    e.path.setAttribute('marker-end', `url(#ar-${on ? e.col : 'off'})`);
+    e.path.setAttribute('opacity', on ? 1 : .8);
+    if (e.lab){ const off = (on ? (1.6 + 2.6 * Math.sqrt(f)) / 2 : 1) + 8;
+      e.lab.setAttribute('x', e.lx + e.nx * off); e.lab.setAttribute('y', e.ly + e.ny * off);
+      e.lab.setAttribute('fill', on ? `var(--${e.col})` : 'var(--muted)'); }
+    if (e.drug) e.drug.setAttribute('visibility', p['inh_' + e.dk] > 0 ? 'visible' : 'hidden');
+  }
+}
+
+// ---- charts --------------------------------------------------------------
+function canvasCtx(c){ const dpr = devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight, x = c.getContext('2d');
+  if (c.width !== Math.round(w*dpr)){ c.width = Math.round(w*dpr); c.height = Math.round(h*dpr); }
+  x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0, 0, w, h); x.font = '13px Inter, sans-serif'; return [x, w, h]; }
+const DOSE_STYLE = {GLS: ['gln', []], FASN: ['fa', [7, 4]], PHGDH: ['ser', [2, 3]], LDH: ['glc', [10, 3, 2, 3]]};
+let doseData = null;
+function drawDose(p){
+  const [x, w, h] = canvasCtx($('cDose'));
+  const L = 44, B = 30, T = 8, R = 20, pw = w - L - R, ph = h - T - B;
+  const X = d => L + d * pw, Y = v => T + ph - Math.min(v, 105) / 105 * ph;
+  x.fillStyle = C.muted; x.strokeStyle = C.line; x.lineWidth = 1;
+  for (const v of [0, 50, 100]){ x.beginPath(); x.moveTo(L, Y(v)); x.lineTo(w - R, Y(v)); x.stroke(); x.textAlign = 'right'; x.textBaseline = 'middle'; x.fillText(v + '%', L - 6, Y(v)); }
+  x.textAlign = 'center'; x.textBaseline = 'top';
+  for (const d of [0, .25, .5, .75, 1]) x.fillText(Math.round(d * 100) + '%', X(d), h - B + 10);
+  if (!doseData) return;
+  for (const k in doseData){
+    const [col, dash] = DOSE_STYLE[k];
+    x.beginPath(); doseData[k].forEach(([d, v], i) => i ? x.lineTo(X(d), Y(v)) : x.moveTo(X(d), Y(v)));
+    x.setLineDash(dash); x.strokeStyle = C[col]; x.lineWidth = 2.5; x.stroke(); x.setLineDash([]);
+    const cur = p['inh_' + k]; const pt = doseData[k].reduce((a, b) => Math.abs(b[0] - cur) < Math.abs(a[0] - cur) ? b : a);
+    x.beginPath(); x.arc(X(pt[0]), Y(pt[1]), 4.5, 0, 6.2832); x.fillStyle = C[col]; x.fill();
+  }
+}
+const BARS = [["EX_glc", "Glucose uptake", "glc"], ["EX_lac", "Lactate out", "glc"], ["OXPHOS", "Respiration", "ox"], ["GLS", "Glutaminase", "gln"],
+  ["PC", "Pyruvate carboxylase", "glc"], ["PDH", "PDH", "glc"], ["IDHrev", "Reductive carbox.", "gln"], ["ACLY", "Citrate to lipid", "fa"],
+  ["EX_fa", "Fatty-acid uptake", "fa"], ["PHGDH", "Serine synthesis", "ser"], ["EX_ser", "Serine uptake", "ser"], ["PPP", "Pentose phosphate", "glc"]];
+function drawBars(r, r0){
+  const [x, w, h] = canvasCtx($('cBar'));
+  const L = 140, R = 44, T = 4, rowH = (h - T - 4) / BARS.length;
+  const vmax = Math.max(...BARS.map(([k]) => Math.max(r[k], r0[k]))) || 1;
+  const S = v => Math.sqrt(v / vmax) * (w - L - R);
+  x.textBaseline = 'middle';
+  BARS.forEach(([k, name, col], i) => {
+    const y = T + i * rowH, bh = Math.min(14, rowH * .62), yc = y + rowH / 2;
+    x.fillStyle = C.ink; x.textAlign = 'right'; x.fillText(name, L - 8, yc);
+    x.fillStyle = C[col]; x.fillRect(L, yc - bh/2, S(r[k]), bh);
+    x.strokeStyle = C.ink; x.lineWidth = 1.2; x.strokeRect(L, yc - bh/2 - 2, S(r0[k]), bh + 4);
+    x.fillStyle = C.muted; x.textAlign = 'left'; x.fillText(r[k].toFixed(1), L + Math.max(S(r[k]), S(r0[k])) + 5, yc);
+  });
+}
+
+// ---- state ---------------------------------------------------------------
+function params(){ const p = {}; SL.forEach(k => p[k] = +$(k).value); TG.forEach(k => p[k] = $(k).getAttribute('aria-pressed') === 'true'); return p; }
+function setParams(q){ const p = Object.assign({}, BASE, q); SL.forEach(k => $(k).value = p[k]); TG.forEach(k => $(k).setAttribute('aria-pressed', p[k])); }
+let doseTimer = null;
+function computeDose(p){
+  const base = Object.assign({}, p); DRUG_IDS.forEach(k => base[k] = 0);
+  const g0 = M.solve(base).growth;
+  doseData = {};
+  for (const d of M.DRUGS){
+    doseData[d] = [];
+    for (let i = 0; i <= 20; i++){ const q = Object.assign({}, base); q['inh_' + d] = i / 20; doseData[d].push([i / 20, g0 > 0 ? 100 * M.solve(q).growth / g0 : 0]); }
+  }
+  drawDose(p);
+}
+function explain(p, r, r0, rel){
+  const used = M.DRUGS.filter(d => p['inh_' + d] > 0);
+  if (!used.length){
+    const s = [];
+    s.push(r.lactate_fraction > .05 ? `The cell sends ${Math.round(100 * r.lactate_fraction)}% of glucose carbon to lactate while still respiring.` : 'Almost no lactate: the cell oxidises its glucose.');
+    if (r.IDHrev > r.PDH) s.push('Most citrate is made from glutamine by reductive carboxylation.');
+    if (p.o2_max < 10) s.push('Low oxygen: glucose carbon no longer enters the TCA cycle through PDH.');
+    return s.join(' ');
+  }
+  const s = [`With ${used.map(d => DRUG_NAMES[d]).join(' + ')} inhibition, growth is ${Math.round(100 * rel)}% of the untreated cell.`];
+  const up = (k, txt) => { if (r[k] > r0[k] * 1.1 + .05) s.push(`${txt} (${r0[k].toFixed(1)} → ${r[k].toFixed(1)}).`); };
+  up('PC', 'Pyruvate carboxylase refills the TCA cycle from glucose');
+  up('EX_fa', 'The cell imports more fatty acids');
+  up('EX_ser', 'The cell imports more serine');
+  up('OXPHOS', 'More NADH is burned in mitochondria');
+  up('MAS', 'More cytosolic NADH is shuttled into mitochondria');
+  if (s.length === 1 && rel < .98) s.push('No backup route is left: this step is now the bottleneck.');
+  if (rel > .98) s.push('The network fully compensates.');
+  return s.join(' ');
+}
+function update(full){
+  const p = params();
+  SL.forEach(k => $('o_' + k).textContent = fmt(k)($(k).value));
+  const r = M.solve(p);
+  const p0 = Object.assign({}, p); DRUG_IDS.forEach(k => p0[k] = 0);
+  const r0 = M.solve(p0);
+  const ref = M.solve(Object.assign({}, BASE));
+  const rel = r0.growth > 0 ? r.growth / r0.growth : 0;
+  drawMap(r, p);
+  $('vG').textContent = r.growth.toFixed(2);
+  $('vGp').textContent = `${Math.round(100 * rel)}% of untreated · ${Math.round(100 * r.growth / ref.growth)}% of default cell`;
+  $('vL').textContent = Math.round(100 * r.lactate_fraction) + '%';
+  $('vR').textContent = r.OXPHOS.toFixed(1);
+  $('vS').textContent = Math.round(100 * r.space_used) + '%';
+  $('status').textContent = explain(p, r, r0, rel);
+  drawBars(r, r0);
+  document.querySelectorAll('#presets button').forEach((b, i) => { const q = Object.assign({}, BASE, PRESETS[i][1]); b.setAttribute('aria-pressed', SL.every(k => Math.abs(q[k] - p[k]) < 1e-9) && TG.every(k => q[k] === p[k])); });
+  drawDose(p);
+  clearTimeout(doseTimer); doseTimer = setTimeout(() => computeDose(p), full ? 0 : 120);
+}
+
+buildMap(); readColours();
+$('doseKey').innerHTML = M.DRUGS.map(d => { const [c, dash] = DOSE_STYLE[d]; return `<span><i style="border-color:var(--${c});border-top-style:${dash.length ? (dash[0] < 3 ? 'dotted' : 'dashed') : 'solid'}"></i>${DRUG_NAMES[d]} inhibitor</span>`; }).join('');
+PRESETS.forEach(([name, q]) => { const b = document.createElement('button'); b.textContent = name; b.onclick = () => { setParams(q); update(true); }; $('presets').append(b); });
+SL.forEach(k => $(k).addEventListener('input', () => update(false)));
+TG.forEach(k => $(k).addEventListener('click', () => { $(k).setAttribute('aria-pressed', $(k).getAttribute('aria-pressed') !== 'true'); update(true); }));
+setParams({}); update(true);
+addEventListener('resize', () => update(true));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColours(); update(true); });
+}
+</script>
+</body>
+</html>

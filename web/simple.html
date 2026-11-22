@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Burn Glucose to Lactate? (simple)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Same lab-bench look as the tme-glucose-competition pages.
+   Aerobic glycolysis = amber, oxidative route / mitochondria = blue, lactate = pink. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#120c16);--ink:light-dark(#1d1422,#f2eaf4);--muted:light-dark(#66586d,#b6a8bd);
+--panel:light-dark(#f8f3f9,#1b131f);--line:light-dark(#e6d9e9,#38293e);
+--cyto:light-dark(#fbe4eb,#2a1724);--mem:light-dark(#d9a6bd,#6d3a57);
+--ag:light-dark(#c98500,#ffc23d);--ox:light-dark(#0b63a8,#6fc0ff);--lac:light-dark(#b8557f,#f08cbc);
+--mito:light-dark(#d5e6f5,#17304a);--accent:light-dark(#6a2c91,#c99be8)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{font-family:Lexend,Inter,sans-serif;letter-spacing:-.02em;line-height:1.08;margin:0}
+h1{font-size:clamp(32px,4.4vw,48px);text-wrap:balance}
+h2{font-size:24px;margin-bottom:10px}
+.top{padding-bottom:12px}
+.top .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px 32px}
+.top p{margin:8px 0 0;max-width:62ch;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;white-space:nowrap}
+.lab{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;padding-top:8px}
+.scene{border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.scene svg{display:block;width:100%;height:auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9em,1fr));gap:10px;margin-top:12px}
+.stat{background:var(--panel);border-radius:12px;padding:10px 14px}
+.stat b{display:block;font:600 clamp(22px,2.4vw,28px) Lexend,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat span{font-size:13px;color:var(--muted)}
+.status{margin:12px 0 0;font-weight:600;min-height:1.6em}
+.ctrl{background:var(--panel);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px;align-self:start}
+button{font:600 15px Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ox);outline-offset:2px}
+button[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 16%,var(--bg));border-color:var(--accent)}
+.presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.presets button{font-size:14px;font-weight:500;text-align:left;padding:6px 12px;line-height:1.25}
+.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.sl label{display:flex;justify-content:space-between;gap:8px;font-size:15px;font-weight:500}
+.sl output{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.sl small{display:block;font-size:13px;color:var(--muted)}
+input[type=range]{width:100%;height:44px;margin:0;accent-color:var(--accent);cursor:pointer}
+.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding-top:0}
+.chart header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px;font-weight:600}
+.chart header span{font-size:13px;color:var(--muted);font-weight:500}
+.fig{position:relative;height:200px;margin-top:4px}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%}
+.key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);margin-top:4px}
+.key i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
+.about{background:var(--panel);margin-top:12px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.about p,.about li{max-width:68ch;margin:0 0 10px}
+.about ol{padding-left:20px;margin:0}
+.eq{font:14px/1.7 ui-monospace,Menlo,monospace;background:var(--bg);border-radius:10px;padding:10px 12px;overflow-x:auto;white-space:pre;margin:0 0 10px}
+.foot{font-size:13px;color:var(--muted)}
+.pal{display:none}
+@media(max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}.cols{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.charts{grid-template-columns:minmax(0,1fr)}.fig{height:170px}}
+</style>
+</head>
+<body>
+<header class="band top"><div class="wrap">
+  <div>
+    <h1>Why Burn Glucose to Lactate?</h1>
+    <p>A cancer cell can turn glucose into ATP fast but wastefully (aerobic glycolysis), or slowly but efficiently (mitochondria). Room inside the cell is limited. Change the glucose supply, oxygen and the space cost of mitochondria, and watch which route the best-growing cell would choose.</p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="note">Simplified illustrative model, not experimental data</div><a href="index.html" style="color:var(--accent);font-weight:600">Open the network model (version 2)</a></div>
+</div></header>
+
+<main class="band" style="padding-top:8px"><div class="wrap lab">
+  <div>
+    <div class="scene">
+      <svg id="svg" viewBox="0 0 640 400" role="img" aria-label="A cell: glucose enters on the left and splits into aerobic glycolysis to lactate (top) and the oxidative route through the mitochondrion (bottom). Arrow widths show the fluxes; the bar at the bottom shows how much of the cell's space each route uses.">
+        <rect x="70" y="24" width="540" height="300" rx="70" fill="var(--cyto)" stroke="var(--mem)" stroke-width="6"/>
+        <text x="96" y="58" font-size="14" fill="var(--muted)" font-family="Inter">cancer cell</text>
+        <g id="mitoG"><ellipse id="mito" cx="410" cy="245" rx="90" ry="48" fill="var(--mito)" stroke="var(--ox)" stroke-width="3"/>
+          <path id="cristae" d="" fill="none" stroke="var(--ox)" stroke-width="2" opacity=".6"/></g>
+        <text x="410" y="312" text-anchor="middle" font-size="13" fill="var(--ox)" font-family="Inter" font-weight="600">mitochondrion</text>
+        <path id="pIn" d="M0 170 H190" fill="none" stroke="var(--ag)" stroke-linecap="round"/>
+        <path id="pAG" d="M190 170 C 300 170, 360 110, 640 110" fill="none" stroke="var(--ag)" stroke-linecap="round"/>
+        <path id="pOX" d="M190 170 C 260 170, 280 245, 360 245" fill="none" stroke="var(--ox)" stroke-linecap="round"/>
+        <path id="pCO2" d="M460 245 C 520 245, 560 200, 640 200" fill="none" stroke="var(--ox)" stroke-linecap="round" stroke-dasharray="6 6"/>
+        <text x="8" y="150" font-size="15" font-family="Inter" font-weight="600" fill="var(--ink)">glucose</text>
+        <text id="tIn" x="8" y="204" font-size="13" font-family="Inter" fill="var(--muted)"></text>
+        <text x="548" y="92" font-size="15" font-family="Inter" font-weight="600" fill="var(--lac)" text-anchor="end">lactate out</text>
+        <text id="tAG" x="300" y="98" font-size="13" font-family="Inter" fill="var(--ag)" font-weight="600"></text>
+        <text x="560" y="232" font-size="15" font-family="Inter" font-weight="600" fill="var(--ox)">CO₂ out</text>
+        <text id="tOX" x="232" y="290" font-size="13" font-family="Inter" fill="var(--ox)" font-weight="600"></text>
+        <text x="70" y="352" font-size="13" font-family="Inter" font-weight="600" fill="var(--muted)">Space budget used by each route</text>
+        <rect x="70" y="360" width="540" height="22" rx="6" fill="var(--bg)" stroke="var(--line)"/>
+        <rect id="bAG" x="70" y="360" width="0" height="22" rx="0" fill="var(--ag)"/>
+        <rect id="bOX" x="70" y="360" width="0" height="22" fill="var(--ox)"/>
+        <text id="tSp" x="610" y="352" font-size="13" font-family="Inter" font-weight="600" fill="var(--ink)" text-anchor="end"></text>
+      </svg>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>ATP made per time</span><b id="vATP">0</b></div>
+      <div class="stat"><span>ATP per glucose</span><b id="vY">0</b></div>
+      <div class="stat"><span>Glucose to lactate</span><b id="vL">0%</b></div>
+    </div>
+    <p class="status" id="status" aria-live="polite"></p>
+  </div>
+  <aside class="ctrl" aria-label="Controls">
+    <div>
+      <div class="lbl" style="margin-bottom:6px">Scenarios</div>
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="sl"><label for="g">Glucose uptake capacity <output id="o_g"></output></label><input type="range" id="g" min="1" max="100" step="1"><small>How much glucose the cell can import (GLUT1, HK2)</small></div>
+    <div class="sl"><label for="o2">Oxygen supply <output id="o_o2"></output></label><input type="range" id="o2" min="6" max="120" step="2"><small>The oxidative route uses 6 O₂ per glucose</small></div>
+    <div class="sl"><label for="ratio">Space cost of mitochondria <output id="o_ratio"></output></label><input type="range" id="ratio" min="2" max="40" step="1"><small>Space per glucose, oxidative route ÷ aerobic glycolysis</small></div>
+    <div class="sl"><label for="atp">ATP per glucose, oxidative route <output id="o_atp"></output></label><input type="range" id="atp" min="26" max="36" step="1"><small>Textbook values are about 30–36</small></div>
+  </aside>
+</div></main>
+
+<section class="band" style="padding-top:0" aria-label="Graphs"><div class="wrap charts">
+  <div class="chart"><header>Glucose flux by route <span>dot: current setting</span></header><div class="fig"><canvas id="c1"></canvas></div>
+    <div class="key"><span><i style="border-color:var(--ox)"></i>oxidative</span><span><i style="border-color:var(--ag);border-top-style:dashed"></i>aerobic glycolysis</span></div></div>
+  <div class="chart"><header>ATP made per time <span>vs one route only</span></header><div class="fig"><canvas id="c2"></canvas></div>
+    <div class="key"><span><i style="border-color:var(--ink)"></i>best mix</span><span><i style="border-color:var(--ox);border-top-style:dashed"></i>oxidative only</span><span><i style="border-color:var(--ag);border-top-style:dotted"></i>glycolysis only</span></div></div>
+  <div class="chart"><header>Glucose converted to lactate <span>%</span></header><div class="fig"><canvas id="c3"></canvas></div>
+    <div class="key"><span><i style="border-color:var(--lac)"></i>lactate fraction</span></div></div>
+</div></section>
+
+<section class="band about"><div class="wrap cols">
+  <div>
+    <h2>Try these experiments</h2>
+    <ol>
+      <li><b>Find the switch.</b> Start at "Low glucose" and raise the glucose capacity slowly. Below 10 all glucose is burned in mitochondria. Above 10 the mitochondria are full, and every extra glucose goes to lactate.</li>
+      <li><b>Yield vs rate.</b> Watch "ATP per glucose" fall while "ATP made per time" still rises. The cell wastes glucose but makes ATP faster.</li>
+      <li><b>Make mitochondria cheap.</b> Lower the space cost below 16 (that is 32 ÷ 2). The Warburg effect disappears: the cell never makes lactate, however much glucose it has.</li>
+      <li><b>Take away oxygen.</b> Lower oxygen to 30 or less. The switch moves to lower glucose, because now oxygen, not space, limits the mitochondria.</li>
+    </ol>
+  </div>
+  <div>
+    <h2>How the model works</h2>
+    <p>Two routes, two unknown fluxes: aerobic glycolysis <i>J</i><sub>AG</sub> (glucose → 2 lactate, 2 ATP) and the oxidative route <i>J</i><sub>OX</sub> (glucose → 6 CO₂, ~32 ATP). The cell picks the fluxes that make ATP fastest:</p>
+<pre class="eq">maximize   2·J_AG + 32·J_OX
+subject to c_AG·J_AG + c_OX·J_OX ≤ 1   (space)
+           J_AG + J_OX           ≤ G   (glucose)
+           6·J_OX                ≤ O2  (oxygen)</pre>
+    <p>This is a tiny <b>flux balance analysis</b> problem, solved by linear programming. <i>c</i><sub>OX</sub> = 0.1; <i>c</i><sub>AG</sub> = 0.1 ÷ (space cost ratio). Glycolysis wins at high glucose only if it makes more ATP per unit of space, i.e. if the ratio is above 32 ÷ 2 = 16.</p>
+  </div>
+  <div>
+    <h2>Where this comes from</h2>
+    <p>Based on my published review <b>"Metabolic Reprogramming in Cancer Cells"</b> (#94), which describes the Warburg effect: tumor cells convert much of their glucose to lactate even when oxygen is available, while their mitochondria keep working.</p>
+    <p>The model structure follows Vazquez et al. (2010, <i>BMC Systems Biology</i> 4:58), who explained aerobic glycolysis as a trade-off between ATP yield and the space (solvent capacity) that enzymes and mitochondria occupy.</p>
+    <p>All numbers are arbitrary and chosen to show behaviour. This model only looks at ATP; version 2 adds the building blocks a dividing cell needs.</p>
+    <p class="foot">Alper Öztürk · Python version: warburg_tradeoff.py in the project repository</p>
+  </div>
+</div></section>
+
+<div class="pal" id="pal"><i data-c="ink" style="color:var(--ink)"></i><i data-c="muted" style="color:var(--muted)"></i><i data-c="line" style="color:var(--line)"></i><i data-c="ag" style="color:var(--ag)"></i><i data-c="ox" style="color:var(--ox)"></i><i data-c="lac" style="color:var(--lac)"></i></div>
+
+<script>
+{
+const $ = id => document.getElementById(id);
+const C_OX = 0.1, ATP_AG = 2;
+const DEFAULTS = {g: 50, o2: 120, ratio: 25, atp: 32};
+const PRESETS = [
+  ["Low glucose", {g: 6, o2: 120, ratio: 25, atp: 32}],
+  ["High glucose (Warburg)", {g: 50, o2: 120, ratio: 25, atp: 32}],
+  ["Low oxygen", {g: 50, o2: 30, ratio: 25, atp: 32}],
+  ["Cheap mitochondria", {g: 50, o2: 120, ratio: 10, atp: 32}],
+];
+const ids = ["g", "o2", "ratio", "atp"];
+const fmt = {g: v => (+v).toFixed(0), o2: v => +v >= 120 ? "plenty" : (+v).toFixed(0), ratio: v => (+v).toFixed(0) + "×", atp: v => (+v).toFixed(0)};
+const val = k => +$(k).value;
+
+// Two-variable linear program solved exactly by checking every corner of the feasible region.
+function solve(G, O2, ratio, atpOx, only){
+  const cAG = C_OX / ratio;
+  const oxCap = only === "ag" ? 0 : Infinity, agCap = only === "ox" ? 0 : Infinity;
+  const cons = [[cAG, C_OX, 1], [1, 1, G], [0, 6, O2], [1, 0, agCap], [0, 1, oxCap], [-1, 0, 0], [0, -1, 0]];
+  let best = {x: 0, y: 0, v: -1};
+  const ok = (x, y) => cons.every(([a, b, c]) => a*x + b*y <= c + 1e-9);
+  for (let i = 0; i < cons.length; i++) for (let j = i + 1; j < cons.length; j++){
+    const [a1, b1, c1] = cons[i], [a2, b2, c2] = cons[j];
+    if (!isFinite(c1) || !isFinite(c2)) continue;
+    const det = a1*b2 - a2*b1; if (Math.abs(det) < 1e-12) continue;
+    const x = (c1*b2 - c2*b1) / det, y = (a1*c2 - a2*c1) / det;
+    if (ok(x, y)){ const v = ATP_AG*x + atpOx*y; if (v > best.v + 1e-9) best = {x, y, v}; }
+  }
+  const x = Math.max(0, best.x), y = Math.max(0, best.y), glc = x + y;
+  return {ag: x, ox: y, atp: ATP_AG*x + atpOx*y, yield: glc > 0 ? (ATP_AG*x + atpOx*y)/glc : 0, lac: glc > 0 ? x/glc : 0, spAG: cAG*x, spOX: C_OX*y};
+}
+
+let C = {};
+function readColours(){ document.querySelectorAll('#pal i').forEach(i => C[i.dataset.c] = getComputedStyle(i).color); }
+
+function drawChart(canvas, series, ymax, xmark, fmtY){
+  const dpr = devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight, cx = canvas.getContext('2d');
+  if (canvas.width !== Math.round(w*dpr)){ canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr); }
+  cx.setTransform(dpr,0,0,dpr,0,0); cx.clearRect(0, 0, w, h);
+  const L = 42, B = 22, T = 8, R = 10, pw = w - L - R, ph = h - T - B;
+  const X = g => L + (g - 1)/99*pw, Y = v => T + ph - Math.min(v, ymax)/ymax*ph;
+  cx.font = '13px Inter, sans-serif'; cx.fillStyle = C.muted; cx.strokeStyle = C.line; cx.lineWidth = 1;
+  for (const f of [0, .5, 1]){ const y = Y(ymax*f); cx.beginPath(); cx.moveTo(L, y); cx.lineTo(w - R, y); cx.stroke(); cx.textAlign = 'right'; cx.textBaseline = 'middle'; cx.fillText(fmtY(ymax*f), L - 6, y); }
+  cx.textAlign = 'center'; cx.textBaseline = 'top';
+  for (const g of [1, 25, 50, 75, 100]) cx.fillText(g, X(g), h - B + 5);
+  for (const s of series){
+    cx.beginPath(); s.pts.forEach(([g, v], i) => i ? cx.lineTo(X(g), Y(v)) : cx.moveTo(X(g), Y(v)));
+    cx.setLineDash(s.dash || []); cx.strokeStyle = s.col; cx.lineWidth = s.lw || 2.5; cx.stroke(); cx.setLineDash([]);
+    if (s.mark){ const m = s.mark(xmark); cx.beginPath(); cx.arc(X(xmark), Y(m), 5, 0, 6.2832); cx.fillStyle = s.col; cx.fill(); }
+  }
+  cx.strokeStyle = C.muted; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(X(xmark), T); cx.lineTo(X(xmark), T + ph); cx.stroke(); cx.setLineDash([]);
+}
+
+function update(){
+  ids.forEach(k => $('o_' + k).textContent = fmt[k]($(k).value));
+  const G = val('g'), O2 = val('o2') >= 120 ? 1000 : val('o2'), ratio = val('ratio'), atp = val('atp');
+  const r = solve(G, O2, ratio, atp);
+  // scene
+  const w = f => 3 + 34 * Math.sqrt(f / 100);
+  $('pIn').setAttribute('stroke-width', w(r.ag + r.ox));
+  $('pAG').setAttribute('stroke-width', r.ag > 1e-6 ? w(r.ag) : 0);
+  $('pOX').setAttribute('stroke-width', r.ox > 1e-6 ? w(r.ox) : 0);
+  $('pCO2').setAttribute('stroke-width', r.ox > 1e-6 ? Math.max(2, w(r.ox) * .5) : 0);
+  const rx = 40 + 60 * Math.min(1, r.ox / 10), ry = 22 + 26 * Math.min(1, r.ox / 10);
+  $('mito').setAttribute('rx', rx); $('mito').setAttribute('ry', ry);
+  let d = ''; for (let k = -2; k <= 2; k++){ const x = 410 + k * rx * .32; d += `M${x} ${245 - ry*.6} q ${rx*.08} ${ry*.6} 0 ${ry*1.2} `; }
+  $('cristae').setAttribute('d', d);
+  $('tIn').textContent = `used: ${(r.ag + r.ox).toFixed(1)} of ${G}`;
+  $('tAG').textContent = `aerobic glycolysis ${r.ag.toFixed(1)}`;
+  $('tOX').textContent = `oxidative ${r.ox.toFixed(1)}`;
+  $('bAG').setAttribute('width', 540 * r.spAG);
+  $('bOX').setAttribute('x', 70 + 540 * r.spAG); $('bOX').setAttribute('width', 540 * r.spOX);
+  $('tSp').textContent = `${Math.round(100 * (r.spAG + r.spOX))}% used`;
+  $('vATP').textContent = r.atp.toFixed(0);
+  $('vY').textContent = r.yield.toFixed(1);
+  $('vL').textContent = Math.round(100 * r.lac) + '%';
+  const oxLimit = Math.min(1 / C_OX, O2 / 6);
+  $('status').textContent = ratio <= 16 ? 'Mitochondria are cheap enough that the cell never needs lactate.'
+    : r.ag < 1e-6 ? `All glucose is oxidised. Aerobic glycolysis starts above a glucose capacity of ${oxLimit.toFixed(0)}.`
+    : (O2 / 6 < 1 / C_OX ? 'Oxygen limits the mitochondria; extra glucose goes to lactate.' : 'Mitochondria fill the space budget; extra glucose goes to lactate (Warburg effect).');
+  // charts
+  const gs = Array.from({length: 100}, (_, i) => i + 1);
+  const mix = gs.map(g => [g, solve(g, O2, ratio, atp)]);
+  const oxo = gs.map(g => [g, solve(g, O2, ratio, atp, 'ox')]);
+  const ago = gs.map(g => [g, solve(g, O2, ratio, atp, 'ag')]);
+  drawChart($('c1'), [
+    {pts: mix.map(([g, s]) => [g, s.ox]), col: C.ox, mark: g => solve(g, O2, ratio, atp).ox},
+    {pts: mix.map(([g, s]) => [g, s.ag]), col: C.ag, dash: [7, 4], mark: g => solve(g, O2, ratio, atp).ag}], 100, G, v => v.toFixed(0));
+  const amax = Math.max(...mix.map(([, s]) => s.atp), ...ago.map(([, s]) => s.atp)) * 1.05;
+  drawChart($('c2'), [
+    {pts: ago.map(([g, s]) => [g, s.atp]), col: C.ag, dash: [2, 3], lw: 2},
+    {pts: oxo.map(([g, s]) => [g, s.atp]), col: C.ox, dash: [7, 4], lw: 2},
+    {pts: mix.map(([g, s]) => [g, s.atp]), col: C.ink, mark: g => solve(g, O2, ratio, atp).atp}], Math.ceil(amax / 50) * 50, G, v => v.toFixed(0));
+  drawChart($('c3'), [{pts: mix.map(([g, s]) => [g, 100 * s.lac]), col: C.lac, mark: g => 100 * solve(g, O2, ratio, atp).lac}], 100, G, v => v.toFixed(0) + '%');
+  document.querySelectorAll('#presets button').forEach((b, i) => b.setAttribute('aria-pressed', ids.every(k => +$(k).value === PRESETS[i][1][k])));
+}
+
+PRESETS.forEach(([name], i) => { const b = document.createElement('button'); b.textContent = name; b.onclick = () => { ids.forEach(k => $(k).value = PRESETS[i][1][k]); update(); }; $('presets').append(b); });
+ids.forEach(k => { $(k).value = DEFAULTS[k]; $(k).addEventListener('input', update); });
+readColours(); update();
+addEventListener('resize', update);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColours(); update(); });
+}
+</script>
+</body>
+</html>
